@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../css/NequiMobile.css";
 
 const NequiMobile: React.FC = () => {
@@ -6,6 +8,18 @@ const NequiMobile: React.FC = () => {
   const [showCodeScreen, setShowCodeScreen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [oneTimeCode, setOneTimeCode] = useState<string>("------");
+
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   const toggleBalanceVisibility = () => {
     setIsBalanceHidden(!isBalanceHidden);
@@ -127,7 +141,17 @@ const NequiMobile: React.FC = () => {
         <div className="header-actions">
           <button className="action-btn">🔔</button>
           <button className="action-btn">❓</button>
-          <button className="action-btn">🔒</button>
+          <button
+            className="action-btn"
+            onClick={handleLogout}
+            title="Cerrar sesión"
+            style={{
+              color: "#ef4444",
+              fontSize: "18px",
+            }}
+          >
+            🚪
+          </button>
         </div>
       </div>
 
