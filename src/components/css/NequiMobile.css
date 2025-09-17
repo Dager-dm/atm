@@ -302,7 +302,7 @@
 /* Suggestions Section */
 .suggestions-section {
   padding: 0 20px 20px;
-  flex: 1;
+  flex: 0 0 auto;
   background: #ffffff;
   color: #1f2937;
 }
@@ -379,9 +379,9 @@
   justify-content: space-around;
   align-items: center;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-  margin-top: auto;
   border-top: 1px solid #e5e7eb;
-  height: 90px;
+  height: auto;
+  min-height: 60px;
 }
 
 .nav-item {

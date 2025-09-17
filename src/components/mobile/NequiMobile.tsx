@@ -1,31 +1,123 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../css/NequiMobile.css";
 
 const NequiMobile: React.FC = () => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
+  const [showCodeScreen, setShowCodeScreen] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [oneTimeCode, setOneTimeCode] = useState<string>("------");
 
   const toggleBalanceVisibility = () => {
     setIsBalanceHidden(!isBalanceHidden);
   };
 
-  const handlePesoButtonClick = () => {
-    alert(
-      "¡Botón de pesos presionado! Aquí iría la funcionalidad de envío de dinero."
-    );
+  const generateCode = () => {
+    const code = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0");
+    setOneTimeCode(code);
   };
+
+  const handlePesoButtonClick = () => {
+    setShowCodeScreen(true);
+    setSecondsLeft(60);
+    generateCode();
+  };
+
+  const handleRegenerate = () => {
+    setSecondsLeft(60);
+    generateCode();
+  };
+
+  const handleBack = () => {
+    setShowCodeScreen(false);
+  };
+
+  useEffect(() => {
+    if (!showCodeScreen) return;
+    if (secondsLeft === 0) return;
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [showCodeScreen, secondsLeft]);
+
+  if (showCodeScreen) {
+    return (
+      <div className="nequi-container">
+        <div
+          style={{
+            background: "#ffffff",
+            color: "#1f2937",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            position: "relative",
+          }}
+        >
+          <button
+            onClick={handleBack}
+            aria-label="Volver"
+            style={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              background: "transparent",
+              border: "none",
+              fontSize: 24,
+              cursor: "pointer",
+            }}
+          >
+            ←
+          </button>
+          <div style={{ fontSize: 14, marginBottom: 8, opacity: 0.7 }}>
+            Código válido por
+          </div>
+          <div style={{ fontSize: 48, fontWeight: 700, marginBottom: 24 }}>
+            {secondsLeft}s
+          </div>
+          <div
+            style={{
+              fontSize: 40,
+              letterSpacing: 6,
+              fontWeight: 800,
+              background: "#1D2247",
+              color: "#fff",
+              padding: "16px 24px",
+              borderRadius: 12,
+              boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
+              marginBottom: 24,
+              minWidth: 220,
+              textAlign: "center",
+            }}
+          >
+            {oneTimeCode}
+          </div>
+          {secondsLeft === 0 ? (
+            <button
+              onClick={handleRegenerate}
+              style={{
+                background: "#8b5cf6",
+                color: "#fff",
+                border: "none",
+                padding: "12px 20px",
+                borderRadius: 10,
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 6px 14px rgba(139,92,246,0.35)",
+              }}
+            >
+              Generar nuevo código
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="nequi-container">
-      {/* Status Bar */}
-      <div className="status-bar">
-        <div className="time">8:56 PM</div>
-        <div className="status-icons">
-          <div className="wifi-icon">📶</div>
-          <div className="signal-icon">📶</div>
-          <div className="battery-icon">🔋 29</div>
-        </div>
-      </div>
-
       {/* Header */}
       <div className="nequi-header">
         <div className="user-greeting">

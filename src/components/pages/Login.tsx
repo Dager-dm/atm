@@ -1,18 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from "firebase/auth";
+import { auth } from "../../firebase/config";
+import { useAuth } from "../context/AuthContext";
 import "../css/Login.css";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirigir si ya está logueado
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/mobile");
+    }
+  }, [user, authLoading, navigate]);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading) {
+    return (
+      <div className="login-container">
+        <div className="login-form-container">
+          <div className="login-form">
+            <div style={{ textAlign: "center", padding: "2rem" }}>
+              <div style={{ fontSize: "18px" }}>Verificando sesión...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password, rememberMe });
+    setError("");
+    setLoading(true);
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // ✅ Puedes acceder al usuario
+      console.log("Usuario logueado:", userCredential.user);
+
+      // Redirigir
+      navigate("/mobile");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = () => {
-    console.log("Google sign in clicked");
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      console.log("Google user:", result.user);
+
+      navigate("/mobile");
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -70,8 +132,21 @@ const Login: React.FC = () => {
               </a>
             </div>
 
-            <button type="submit" className="signin-button">
-              Sign in
+            {error && (
+              <div
+                className="error-message"
+                style={{
+                  color: "red",
+                  marginBottom: "16px",
+                  textAlign: "center",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="signin-button" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
             </button>
 
             <button
