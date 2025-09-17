@@ -1,0 +1,238 @@
+.login-container {
+  display: flex;
+  min-height: calc(100vh - 70px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-form-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  padding: 2rem;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.login-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.login-subtitle {
+  font-size: 1rem;
+  color: #4a4a4a;
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #8b5cf6;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-size: 0.875rem;
+  color: #1a1a1a;
+}
+
+.forgot-password {
+  font-size: 0.875rem;
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.signin-button {
+  background-color: #8b5cf6;
+  color: #ffffff;
+  border: none;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  margin-top: 0.5rem;
+}
+
+.signin-button:hover {
+  background-color: #7c3aed;
+}
+
+.google-signin-button {
+  background-color: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.google-signin-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.google-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-link {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 1.5rem 0 0 0;
+}
+
+.signup-link-text {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link-text:hover {
+  text-decoration: underline;
+}
+
+.login-graphic {
+  flex: 1;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.abstract-circle {
+  width: 300px;
+  height: 300px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle-top {
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 150px 150px 0 0;
+  position: absolute;
+  top: 0;
+  z-index: 2;
+}
+
+.circle-bottom {
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+  border-radius: 0 0 150px 150px;
+  position: absolute;
+  bottom: 0;
+  z-index: 1;
+  filter: blur(20px);
+  opacity: 0.7;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+  
+  .login-graphic {
+    min-height: 200px;
+  }
+  
+  .abstract-circle {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .circle-top {
+    border-radius: 100px 100px 0 0;
+  }
+  
+  .circle-bottom {
+    border-radius: 0 0 100px 100px;
+  }
+}
