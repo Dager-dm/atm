@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./components/context/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/ui/Navbar";
 import NequiATM from "./components/pages/NequiATM";
 import AhorroATM from "./components/pages/AhorroATM";

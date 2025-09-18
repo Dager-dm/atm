@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useAccount } from "../../contexts/AccountContext";
 import "../css/NequiMobile.css";
+import logoutIcon from "../../assets/logout.png";
 
 const NequiMobile: React.FC = () => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
@@ -10,6 +12,7 @@ const NequiMobile: React.FC = () => {
   const [oneTimeCode, setOneTimeCode] = useState<string>("------");
 
   const { logout } = useAuth();
+  const { account, loading: accountLoading } = useAccount();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -136,7 +139,7 @@ const NequiMobile: React.FC = () => {
       <div className="nequi-header">
         <div className="user-greeting">
           <div className="user-icon">👤</div>
-          <span>Hola, Dager</span>
+          <span>Hola, {account?.nombreTitular || "Usuario"}</span>
         </div>
         <div className="header-actions">
           <button className="action-btn">🔔</button>
@@ -146,11 +149,19 @@ const NequiMobile: React.FC = () => {
             onClick={handleLogout}
             title="Cerrar sesión"
             style={{
-              color: "#ef4444",
-              fontSize: "18px",
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            🚪
+            <img
+              src={logoutIcon}
+              alt="logout"
+              style={{ width: 20, height: 20 }}
+            />
           </button>
         </div>
       </div>
@@ -164,7 +175,13 @@ const NequiMobile: React.FC = () => {
           </button>
         </div>
         <div className="balance-amount">
-          {isBalanceHidden ? "••••••••" : "$ 482.444,91"}
+          {accountLoading
+            ? "Cargando..."
+            : isBalanceHidden
+            ? "••••••••"
+            : account
+            ? `$ ${Number(account.balance || 0).toLocaleString()}`
+            : "$ 0"}
         </div>
       </div>
 

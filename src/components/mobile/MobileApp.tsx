@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useAccount } from "../../contexts/AccountContext";
 import NequiMobile from "./NequiMobile";
 import AhorroManoMobile from "./AhorroManoMobile";
 import AhorroMobile from "./AhorroMobile";
@@ -10,6 +11,11 @@ const MobileApp: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("nequi");
   const [now, setNow] = useState<string>("");
   const { logout } = useAuth();
+  const {
+    account,
+    loading: accountLoading,
+    error: accountError,
+  } = useAccount();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -34,6 +40,34 @@ const MobileApp: React.FC = () => {
   }, []);
 
   const renderContent = () => {
+    if (accountLoading) {
+      return (
+        <div style={{ color: "#111827", padding: 16, fontWeight: 600 }}>
+          Cargando cuenta...
+        </div>
+      );
+    }
+
+    if (accountError) {
+      return (
+        <div style={{ color: "#b91c1c", padding: 16, fontWeight: 600 }}>
+          {accountError}
+        </div>
+      );
+    }
+
+    // Seleccionar vista por tipo de cuenta (normalizado en el contexto)
+    const type = (account?.accountType || "").toLowerCase();
+    if (type.includes("nequi")) return <NequiMobile />;
+    if (
+      type.includes("ahorro a la mano") ||
+      type.includes("ahorromano") ||
+      type.includes("mano")
+    )
+      return <AhorroManoMobile />;
+    if (type.includes("ahorro")) return <AhorroMobile />;
+
+    // Fallback: usar selección manual o Nequi por defecto
     switch (activeSection) {
       case "nequi":
         return <NequiMobile />;
@@ -72,22 +106,6 @@ const MobileApp: React.FC = () => {
                 <div className="signal-icon">📶</div>
                 <div className="wifi-icon">📶</div>
                 <div className="battery-icon">🔋</div>
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    marginLeft: "8px",
-                  }}
-                  title="Cerrar sesión"
-                >
-                  🚪
-                </button>
               </div>
             </div>
             {renderContent()}
