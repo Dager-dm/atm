@@ -622,7 +622,7 @@ const AhorroManoATM: React.FC = () => {
               }}
             >
               <input
-                type="tel"
+                type="password"
                 value={code}
                 onChange={(e) =>
                   setCode(e.target.value.replace(/\D/g, "").slice(0, 4))
@@ -698,7 +698,7 @@ const AhorroManoATM: React.FC = () => {
                 boxShadow: "0 8px 18px rgba(0,0,0,0.15)",
               }}
             >
-              {retiroOk}
+              {retiroOk} - $ {Number(selectedAmount || 0).toLocaleString()}
             </div>
           ) : null}
           {retiroOk && retiroBills ? (
