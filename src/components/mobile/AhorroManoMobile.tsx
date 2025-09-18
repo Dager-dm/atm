@@ -3,11 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAccount } from "../../contexts/AccountContext";
 import logoutIcon from "../../assets/logout.png";
+import {
+  generateCode as supaGenerateCode,
+  deleteCode as supaDeleteCode,
+} from "../../supabase/supabaseFunctions";
 
 const AhorroManoMobile: React.FC = () => {
   const [showCodeScreen, setShowCodeScreen] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(60);
-  const [oneTimeCode, setOneTimeCode] = useState<string>("------");
+  const [oneTimeCode, setOneTimeCode] = useState<string>("----");
+  const [regenCooldown, setRegenCooldown] = useState<number>(0);
 
   const { logout } = useAuth();
   const { account } = useAccount();
@@ -22,22 +26,28 @@ const AhorroManoMobile: React.FC = () => {
     }
   };
 
-  const generateCode = () => {
-    const code = Math.floor(Math.random() * 1000000)
+  const generateAndSaveCode = async () => {
+    const code = Math.floor(Math.random() * 10000)
       .toString()
-      .padStart(6, "0");
+      .padStart(4, "0");
     setOneTimeCode(code);
+    try {
+      if (account?.id) {
+        await supaGenerateCode({ idCuenta: account.id, code });
+      }
+    } catch (err) {
+      console.error("Error al guardar el código en Supabase:", err);
+    }
+    setRegenCooldown(10);
   };
 
-  const openCodeScreen = () => {
+  const handleCodeButtonClick = async () => {
     setShowCodeScreen(true);
-    setSecondsLeft(60);
-    generateCode();
+    await generateAndSaveCode();
   };
 
-  const handleRegenerate = () => {
-    setSecondsLeft(60);
-    generateCode();
+  const handleRegenerate = async () => {
+    await generateAndSaveCode();
   };
 
   const handleBack = () => {
@@ -46,10 +56,34 @@ const AhorroManoMobile: React.FC = () => {
 
   useEffect(() => {
     if (!showCodeScreen) return;
-    if (secondsLeft === 0) return;
-    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    if (regenCooldown <= 0) return;
+    const t = setTimeout(
+      () => setRegenCooldown((s) => Math.max(0, s - 1)),
+      1000
+    );
     return () => clearTimeout(t);
-  }, [showCodeScreen, secondsLeft]);
+  }, [regenCooldown, showCodeScreen]);
+
+  // Función para marcar el código como usado (se puede llamar desde el ATM)
+  const markCodeAsUsed = async () => {
+    if (oneTimeCode && oneTimeCode !== "----") {
+      try {
+        await supaDeleteCode({ code: oneTimeCode });
+        setOneTimeCode("----");
+        setShowCodeScreen(false);
+      } catch (err) {
+        console.error("Error al eliminar el código en Supabase:", err);
+      }
+    }
+  };
+
+  // Exponer la función para que pueda ser llamada desde el ATM
+  React.useEffect(() => {
+    (window as any).markAhorroManoCodeAsUsed = markCodeAsUsed;
+    return () => {
+      delete (window as any).markAhorroManoCodeAsUsed;
+    };
+  }, [oneTimeCode]);
 
   if (showCodeScreen) {
     return (
@@ -82,22 +116,12 @@ const AhorroManoMobile: React.FC = () => {
             ←
           </button>
           <div style={{ fontSize: 14, marginBottom: 8, opacity: 0.8 }}>
-            Código válido por
-          </div>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 700,
-              marginBottom: 24,
-              color: "#facc15",
-            }}
-          >
-            {secondsLeft}s
+            Código de retiro
           </div>
           <div
             style={{
               fontSize: 40,
-              letterSpacing: 6,
+              letterSpacing: 8,
               fontWeight: 800,
               background: "#1f2937",
               color: "#facc15",
@@ -105,29 +129,41 @@ const AhorroManoMobile: React.FC = () => {
               borderRadius: 12,
               boxShadow: "0 6px 16px rgba(0,0,0,0.35)",
               marginBottom: 24,
-              minWidth: 220,
+              minWidth: 180,
               textAlign: "center",
             }}
           >
             {oneTimeCode}
           </div>
-          {secondsLeft === 0 ? (
-            <button
-              onClick={handleRegenerate}
-              style={{
-                background: "#facc15",
-                color: "#111827",
-                border: "none",
-                padding: "12px 20px",
-                borderRadius: 10,
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 6px 14px rgba(250,204,21,0.35)",
-              }}
-            >
-              Generar nuevo código
-            </button>
-          ) : null}
+          <div
+            style={{
+              fontSize: 12,
+              marginBottom: 16,
+              opacity: 0.7,
+              textAlign: "center",
+            }}
+          >
+            Este código se vence cuando se use
+          </div>
+          <button
+            onClick={handleRegenerate}
+            disabled={regenCooldown > 0}
+            style={{
+              background: "#facc15",
+              color: "#111827",
+              border: "none",
+              padding: "12px 20px",
+              borderRadius: 10,
+              fontWeight: 700,
+              cursor: regenCooldown > 0 ? "not-allowed" : "pointer",
+              opacity: regenCooldown > 0 ? 0.6 : 1,
+              boxShadow: "0 6px 14px rgba(250,204,21,0.35)",
+            }}
+          >
+            {regenCooldown > 0
+              ? `Espera ${regenCooldown}s`
+              : "Generar nuevo código"}
+          </button>
         </div>
       </div>
     );
@@ -269,7 +305,7 @@ const AhorroManoMobile: React.FC = () => {
         }}
       >
         <button
-          onClick={openCodeScreen}
+          onClick={handleCodeButtonClick}
           style={{
             pointerEvents: "auto",
             background: "#facc15",

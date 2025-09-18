@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../css/ATMInterface.css";
-import { getAccount } from "../../supabase/supabaseFunctions";
+import { getAccount, createRetiro } from "../../supabase/supabaseFunctions";
+import { calcular } from "../../code/calcular";
 
 interface ValidatedAccount {
   id: string;
@@ -25,6 +26,23 @@ const NequiATM: React.FC = () => {
   const [amountError, setAmountError] = useState<string | null>(null);
   const [code, setCode] = useState<string>("");
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [retiroLoading, setRetiroLoading] = useState<boolean>(false);
+  const [retiroError, setRetiroError] = useState<string | null>(null);
+  const [retiroOk, setRetiroOk] = useState<string | null>(null);
+  const [retiroBills, setRetiroBills] = useState<null | {
+    billetes: { [k: string]: number };
+  }>(null);
+
+  const handleSelectAmount = (value: number) => {
+    const balance = account?.balance || 0;
+    if (value > balance) {
+      setAmountError("El monto supera el saldo disponible");
+      return;
+    }
+    setAmountError(null);
+    setSelectedAmount(value);
+    setStep("code");
+  };
 
   const handleAccountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const onlyDigits = e.target.value.replace(/\D/g, "");
@@ -223,37 +241,25 @@ const NequiATM: React.FC = () => {
             <div className="button-column">
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(20000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(20000)}
               >
                 <span className="btn-text">$20.000</span>
               </button>
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(50000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(50000)}
               >
                 <span className="btn-text">$50.000</span>
               </button>
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(100000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(100000)}
               >
                 <span className="btn-text">$100.000</span>
               </button>
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(200000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(200000)}
               >
                 <span className="btn-text">$200.000</span>
               </button>
@@ -262,19 +268,13 @@ const NequiATM: React.FC = () => {
             <div className="button-column">
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(500000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(500000)}
               >
                 <span className="btn-text">$500.000</span>
               </button>
               <button
                 className="transaction-btn withdrawal"
-                onClick={() => {
-                  setSelectedAmount(1000000);
-                  setStep("code");
-                }}
+                onClick={() => handleSelectAmount(1000000)}
               >
                 <span className="btn-text">$1.000.000</span>
               </button>
@@ -356,6 +356,12 @@ const NequiATM: React.FC = () => {
               const value = Number(digits);
               if (!value || value <= 0) {
                 setAmountError("Ingresa un monto válido");
+                return;
+              }
+              if (value % 10000 !== 0 || value < 10000) {
+                setAmountError(
+                  "El monto debe ser múltiplo de 10.000 y mínimo 10.000"
+                );
                 return;
               }
               if (value > (account?.balance || 0)) {
@@ -472,67 +478,178 @@ const NequiATM: React.FC = () => {
             </div>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setCodeError(null);
-              if (!code || code.length < 6) {
-                setCodeError("Código inválido");
-                return;
-              }
-              /* Aquí luego conectamos verificación */ alert(
-                "Código ingresado: " + code
-              );
-            }}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="tel"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-              }
-              placeholder="Código de 6 dígitos"
-              style={{
-                width: "60%",
-                padding: "12px 14px",
-                borderRadius: 10,
-                border: "1px solid #d1d5db",
-                background: "#ffffff",
-                color: "#111827",
-                fontSize: 16,
-                outline: "none",
-                textAlign: "center",
-                letterSpacing: 4,
+          {!retiroOk ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setCodeError(null);
+                setRetiroError(null);
+                setRetiroOk(null);
+                setRetiroBills(null);
+                if (!code || code.length < 6) {
+                  setCodeError("Código inválido");
+                  return;
+                }
+                const valor = Number(selectedAmount || 0);
+                if (!valor || valor <= 0) {
+                  setCodeError("Monto inválido");
+                  return;
+                }
+                const idCuenta = account?.id || account?.idCuenta;
+                if (!idCuenta) {
+                  setRetiroError("Cuenta no válida");
+                  return;
+                }
+                try {
+                  setRetiroLoading(true);
+                  const body = {
+                    id_cuenta: String(idCuenta),
+                    code: String(code),
+                    valor: String(valor),
+                  } as any;
+                  const res = await createRetiro(body);
+                  if (res?.success === false && res?.error) {
+                    setRetiroError(res.error);
+                  } else {
+                    setRetiroOk("Retiro exitoso");
+                    setRetiroBills(calcular(valor));
+                  }
+                } catch (err: any) {
+                  // Algunos endpoints exitosos pueden responder vacío.
+                  if (String(err?.message || "").includes("Empty response")) {
+                    setRetiroOk("Retiro exitoso");
+                    setRetiroBills(calcular(Number(selectedAmount || 0)));
+                  } else {
+                    setRetiroError(err?.message || "Error al crear el retiro");
+                  }
+                } finally {
+                  setRetiroLoading(false);
+                }
               }}
-              inputMode="numeric"
-              autoFocus
-            />
-            {codeError ? (
-              <div style={{ color: "#fecaca", fontSize: 14 }}>{codeError}</div>
-            ) : null}
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                type="button"
-                className="transaction-btn withdrawal"
-                onClick={() => setStep("options")}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="transaction-btn custom"
-                style={{ width: 220 }}
-              >
-                Confirmar
-              </button>
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <input
+                type="tel"
+                value={code}
+                onChange={(e) =>
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                placeholder="Código de 6 dígitos"
+                style={{
+                  width: "60%",
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  border: "1px solid #d1d5db",
+                  background: "#ffffff",
+                  color: "#111827",
+                  fontSize: 16,
+                  outline: "none",
+                  textAlign: "center",
+                  letterSpacing: 4,
+                }}
+                inputMode="numeric"
+                autoFocus
+              />
+              {codeError ? (
+                <div style={{ color: "#fecaca", fontSize: 14 }}>
+                  {codeError}
+                </div>
+              ) : null}
+              {retiroError ? (
+                <div style={{ color: "#fecaca", fontSize: 14 }}>
+                  {retiroError}
+                </div>
+              ) : null}
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  type="button"
+                  className="transaction-btn withdrawal"
+                  onClick={() => setStep("options")}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="transaction-btn custom"
+                  style={{ width: 220, opacity: retiroLoading ? 0.7 : 1 }}
+                  disabled={retiroLoading}
+                >
+                  {retiroLoading ? "Creando..." : "Confirmar"}
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          {retiroOk ? (
+            <div
+              style={{
+                color: "#ffffff",
+                fontSize: 18,
+                fontWeight: "bold",
+                textAlign: "center",
+                marginBottom: 16,
+                background: "linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%)",
+                padding: "10px 14px",
+                borderRadius: 12,
+                boxShadow: "0 8px 18px rgba(0,0,0,0.15)",
+              }}
+            >
+              {retiroOk}
             </div>
-          </form>
+          ) : null}
+          {retiroOk && retiroBills ? (
+            <div
+              style={{
+                background: "rgba(139,92,246,0.08)",
+                border: "2px solid #8b5cf6",
+                color: "#1f2937",
+                fontSize: 16,
+                padding: "20px",
+                borderRadius: 12,
+                textAlign: "center",
+                marginBottom: 20,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: "bold",
+                  marginBottom: 12,
+                  color: "#8b5cf6",
+                }}
+              >
+                Billetes entregados:
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {(["10k", "20k", "50k", "100k"] as const).map((k) => (
+                  <span
+                    key={k}
+                    style={{
+                      background: "#f3e8ff",
+                      color: "#1f2937",
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      border: "1px solid #d8b4fe",
+                      minWidth: 80,
+                    }}
+                  >
+                    {k}: {retiroBills.billetes[k]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="atm-footer">

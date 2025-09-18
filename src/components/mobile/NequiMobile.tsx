@@ -4,12 +4,17 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useAccount } from "../../contexts/AccountContext";
 import "../css/NequiMobile.css";
 import logoutIcon from "../../assets/logout.png";
+import {
+  generateCode as supaGenerateCode,
+  deleteCode as supaDeleteCode,
+} from "../../supabase/supabaseFunctions";
 
 const NequiMobile: React.FC = () => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
   const [showCodeScreen, setShowCodeScreen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [oneTimeCode, setOneTimeCode] = useState<string>("------");
+  const [regenCooldown, setRegenCooldown] = useState<number>(0);
 
   const { logout } = useAuth();
   const { account, loading: accountLoading } = useAccount();
@@ -28,22 +33,30 @@ const NequiMobile: React.FC = () => {
     setIsBalanceHidden(!isBalanceHidden);
   };
 
-  const generateCode = () => {
+  const generateAndSaveCode = async () => {
     const code = Math.floor(Math.random() * 1000000)
       .toString()
       .padStart(6, "0");
     setOneTimeCode(code);
+    try {
+      if (account?.id) {
+        await supaGenerateCode({ idCuenta: account.id, code });
+      }
+    } catch (err) {
+      console.error("Error al guardar el código en Supabase:", err);
+    }
+    setRegenCooldown(10);
   };
 
-  const handlePesoButtonClick = () => {
+  const handlePesoButtonClick = async () => {
     setShowCodeScreen(true);
     setSecondsLeft(60);
-    generateCode();
+    await generateAndSaveCode();
   };
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     setSecondsLeft(60);
-    generateCode();
+    await generateAndSaveCode();
   };
 
   const handleBack = () => {
@@ -56,6 +69,29 @@ const NequiMobile: React.FC = () => {
     const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [showCodeScreen, secondsLeft]);
+
+  useEffect(() => {
+    if (!showCodeScreen) return;
+    if (secondsLeft === 0 && oneTimeCode && oneTimeCode !== "------") {
+      (async () => {
+        try {
+          await supaDeleteCode({ code: oneTimeCode });
+        } catch (err) {
+          console.error("Error al eliminar el código en Supabase:", err);
+        }
+      })();
+    }
+  }, [secondsLeft, showCodeScreen, oneTimeCode]);
+
+  useEffect(() => {
+    if (!showCodeScreen) return;
+    if (regenCooldown <= 0) return;
+    const t = setTimeout(
+      () => setRegenCooldown((s) => Math.max(0, s - 1)),
+      1000
+    );
+    return () => clearTimeout(t);
+  }, [regenCooldown, showCodeScreen]);
 
   if (showCodeScreen) {
     return (
@@ -76,6 +112,7 @@ const NequiMobile: React.FC = () => {
           <button
             onClick={handleBack}
             aria-label="Volver"
+            disabled={secondsLeft > 0}
             style={{
               position: "absolute",
               top: 12,
@@ -83,7 +120,8 @@ const NequiMobile: React.FC = () => {
               background: "transparent",
               border: "none",
               fontSize: 24,
-              cursor: "pointer",
+              cursor: secondsLeft > 0 ? "not-allowed" : "pointer",
+              opacity: secondsLeft > 0 ? 0.5 : 1,
             }}
           >
             ←
@@ -114,6 +152,7 @@ const NequiMobile: React.FC = () => {
           {secondsLeft === 0 ? (
             <button
               onClick={handleRegenerate}
+              disabled={regenCooldown > 0}
               style={{
                 background: "#8b5cf6",
                 color: "#fff",
@@ -121,11 +160,14 @@ const NequiMobile: React.FC = () => {
                 padding: "12px 20px",
                 borderRadius: 10,
                 fontWeight: 700,
-                cursor: "pointer",
+                cursor: regenCooldown > 0 ? "not-allowed" : "pointer",
+                opacity: regenCooldown > 0 ? 0.6 : 1,
                 boxShadow: "0 6px 14px rgba(139,92,246,0.35)",
               }}
             >
-              Generar nuevo código
+              {regenCooldown > 0
+                ? `Espera ${regenCooldown}s`
+                : "Generar nuevo código"}
             </button>
           ) : null}
         </div>

@@ -11,7 +11,6 @@ const Navbar: React.FC<NavbarProps> = ({ onSectionChange }) => {
   const menuItems = [
     { id: "nequi", label: "Nequi" },
     { id: "ahorromano", label: "Ahorro a la mano" },
-    { id: "ahorro", label: "Ahorro" },
   ];
 
   const handleItemClick = (itemId: string) => {
